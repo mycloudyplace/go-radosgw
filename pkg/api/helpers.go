@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"time"
 
-	"fmt"
-
 	"github.com/QuentinPerez/go-encodeUrl"
 )
 
@@ -476,13 +474,14 @@ func (api *API) RemoveKey(conf KeyConfig) error {
 
 // BucketConfig bucket request
 type BucketConfig struct {
-	Bucket       string `url:"bucket,ifStringIsNotEmpty"`  // The bucket to return info on
-	UID          string `url:"uid,ifStringIsNotEmpty"`     // The user to retrieve bucket information for
-	Stats        bool   `url:"stats,ifBoolIsTrue"`         // Return bucket statistics
-	CheckObjects bool   `url:"check-objects,ifBoolIsTrue"` // Check multipart object accounting
-	Fix          bool   `url:"fix,ifBoolIsTrue"`           // Also fix the bucket index when checking
-	PurgeObjects bool   `url:"purge-objects,ifBoolIsTrue"` // Remove a buckets objects before deletion
-	Object       string `url:"object,ifStringIsNotEmpty"`  // The object to remove
+	BucketID     string `url:"bucket-id,ifStringIsNotEmpty"` // The bucket to return info on
+	Bucket       string `url:"bucket,ifStringIsNotEmpty"`    // The bucket to return info on
+	UID          string `url:"uid,ifStringIsNotEmpty"`       // The user to retrieve bucket information for
+	Stats        bool   `url:"stats,ifBoolIsTrue"`           // Return bucket statistics
+	CheckObjects bool   `url:"check-objects,ifBoolIsTrue"`   // Check multipart object accounting
+	Fix          bool   `url:"fix,ifBoolIsTrue"`             // Also fix the bucket index when checking
+	PurgeObjects bool   `url:"purge-objects,ifBoolIsTrue"`   // Remove a buckets objects before deletion
+	Object       string `url:"object,ifStringIsNotEmpty"`    // The object to remove
 }
 
 // GetBucket gets information about a subset of the existing buckets.
@@ -647,8 +646,9 @@ func (api *API) LinkBucket(conf BucketConfig) error {
 		errs   []error
 	)
 
-	// FIXME doesn't work
-	return fmt.Errorf("LinkBucket not implemented yet")
+	if conf.BucketID == "" {
+		return errors.New("BucketID field is required")
+	}
 	if conf.Bucket == "" {
 		return errors.New("Bucket field is required")
 	}
@@ -763,6 +763,7 @@ type QuotaConfig struct {
 	MaxSizeKB  string `url:"max-size-kb,ifStringIsNotEmpty"` // The max-size-kb option allows you to specify a quota for the maximum number of bytes. A negative value disables this setting
 	Enabled    string `url:"enabled,ifStringIsNotEmpty"`     // The enabled option enables the quotas
 	QuotaType  string `url:"quota-type,ifStringIsNotEmpty"`  // The quota-type option sets the scope for the quota. The options are bucket and user.
+	Bucket     string `url:"bucket,ifStringIsNotEmpty"`      // The quota-type option sets the scope for the quota. The options are bucket and user.
 }
 
 // GetQuotas returns user's quotas
@@ -821,6 +822,34 @@ func (api *API) UpdateQuota(conf QuotaConfig) error {
 	}
 	values.Add("format", "json")
 	_, _, err := api.call("PUT", "/user", values, true, "quota")
+	return err
+}
+
+// UpdateBucketQuota updates bucket quotas
+//
+// !! caps:	buckets=write !!
+//
+//@UID
+//@Quota [bucket]
+//
+func (api *API) UpdateBucketQuota(conf QuotaConfig) error {
+	var (
+		values = url.Values{}
+		errs   []error
+	)
+
+	if conf.UID == "" {
+		return errors.New("UID field is required")
+	}
+	if conf.Bucket == "" {
+		return errors.New("Bucket field is required")
+	}
+	values, errs = encurl.Translate(conf)
+	if len(errs) > 0 {
+		return errs[0]
+	}
+	values.Add("format", "json")
+	_, _, err := api.call("PUT", "/bucket", values, true, "quota")
 	return err
 }
 

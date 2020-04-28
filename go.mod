@@ -1,6 +1,6 @@
 module github.com/QuentinPerez/go-radosgw
 
-go 1.12
+go 1.14
 
 require (
 	github.com/QuentinPerez/go-encodeUrl v0.0.0-20160615164728-645a9dbeee15
